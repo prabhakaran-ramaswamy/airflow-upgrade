@@ -1,0 +1,93 @@
+x-airflow-common: &airflow-common
+  image: airflow-upgrade-3.3:wolfi-py313
+  build:
+    context: .
+    dockerfile: Dockerfile
+  env_file:
+    - ../.env
+  environment: &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: ${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN:-postgresql+psycopg2://postgres:Rampoo%401981@postgres:5432/airflow}
+    AIRFLOW__CORE__FERNET_KEY: dGVzdC1mZXJuZXQta2V5LWZvci1sb2NhbC1kZXYtMzJieXRlcw==
+    AIRFLOW__API_AUTH__JWT_SECRET: airflow-upgrade-lab-jwt-secret-change-me
+    AIRFLOW__API__EXPOSE_CONFIG: "true"
+    # simple_auth_manager_users = "username:role" (role, not password)
+    AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: admin:admin
+    AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_PASSWORDS_FILE: /opt/airflow/simple_auth_manager_passwords.json
+    # LocalExecutor workers run in scheduler; must reach api-server Execution API
+    AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-api-server:8080/execution/
+    AIRFLOW_UID: ${AIRFLOW_UID:-50000}
+    AIRFLOW_VERSION_LABEL: "3.3.0-wolfi-py313"
+    UPGRADE_STAGE: "3"
+    POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+    POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+    POSTGRES_USER: ${POSTGRES_USER:-postgres}
+    POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-Rampoo@1981}
+    DEST_DB: ${DEST_DB:-airflow}
+    SOURCE_FILE: ${SOURCE_FILE:-/data/orders.csv}
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ../shared/dags:/opt/airflow/dags/shared
+    - ../data-migration/data:/data:ro
+    - ./logs:/opt/airflow/logs
+    - ./plugins:/opt/airflow/plugins
+    - ./config:/opt/airflow/config
+  user: "50000:0"
+  entrypoint: ["airflow"]
+  networks:
+    - airflow-upgrade
+
+services:
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        airflow db migrate
+        echo "Airflow 3.3.0 (Wolfi/Python 3.13) DB migrated"
+    environment:
+      <<: *airflow-common-env
+
+  airflow-api-server:
+    <<: *airflow-common
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        # Simple auth auto-generates passwords unless this file exists (username != password role).
+        printf '%s\n' '{"admin":"admin"}' > /opt/airflow/simple_auth_manager_passwords.json
+        exec airflow api-server
+    ports:
+      - "18080:8080"
+    restart: always
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: ["scheduler"]
+    restart: always
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+      airflow-api-server:
+        condition: service_started
+
+  airflow-dag-processor:
+    <<: *airflow-common
+    command: ["dag-processor"]
+    restart: always
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+      airflow-api-server:
+        condition: service_started
+
+networks:
+  airflow-upgrade:
+    name: airflow-upgrade-net
+    external: true

@@ -1,0 +1,27 @@
+# Shared Postgres for all Airflow stages + data migration.
+# Host port 15432 (non-default). Containers use hostname "postgres":5432.
+# Data on host: D:\airflow-upgrade\pgdata  (delete this folder to reset and rerun)
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: airflow-upgrade-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-Rampoo@1981}
+      POSTGRES_DB: postgres
+    ports:
+      - "${POSTGRES_HOST_PORT:-15432}:5432"
+    volumes:
+      - ../pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - airflow-upgrade
+    restart: unless-stopped
+
+networks:
+  airflow-upgrade:
+    name: airflow-upgrade-net

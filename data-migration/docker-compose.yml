@@ -1,0 +1,25 @@
+services:
+  data-ops:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: airflow-upgrade-data-ops:latest
+    env_file:
+      - ../.env
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-Rampoo@1981}
+      DEST_DB: ${DEST_DB:-airflow}
+      SOURCE_FILE: ${SOURCE_FILE:-/data/orders.csv}
+      SEED_TOTAL: ${SEED_TOTAL:-150}
+    volumes:
+      - ./data:/data
+    networks:
+      - airflow-upgrade
+
+networks:
+  airflow-upgrade:
+    name: airflow-upgrade-net
+    external: true
