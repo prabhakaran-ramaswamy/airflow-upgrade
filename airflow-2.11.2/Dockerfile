@@ -21,7 +21,8 @@ RUN python3.12 -m venv "${VIRTUAL_ENV}" \
     && pip install --no-cache-dir \
          "apache-airflow==${AIRFLOW_VERSION}" \
          --constraint "${CONSTRAINT_URL}" \
-    && pip install --no-cache-dir "psycopg2-binary==2.9.10"
+    && pip install --no-cache-dir "psycopg2-binary==2.9.10" \
+    && pip install --no-cache-dir "oracledb==2.5.1" "teradatasql==20.0.0.15"
 
 FROM cgr.dev/chainguard/wolfi-base:latest
 

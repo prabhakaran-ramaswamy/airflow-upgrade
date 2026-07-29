@@ -23,7 +23,9 @@ RUN python3.13 -m venv "${VIRTUAL_ENV}" \
          --constraint "${CONSTRAINT_URL}" \
     && pip install --no-cache-dir \
          "psycopg2-binary==2.9.10" \
-         "asyncpg"
+         "asyncpg" \
+         "oracledb==2.5.1" \
+         "teradatasql==20.0.0.15"
 
 FROM cgr.dev/chainguard/wolfi-base:latest
 

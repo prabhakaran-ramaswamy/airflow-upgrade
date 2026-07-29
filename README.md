@@ -91,6 +91,18 @@ Source file: `data-migration/data/orders.csv` (mounted at `/data/orders.csv` in 
 Destination: `airflow.orders` (+ `migration_state`) — same database as Airflow metadata  
 DAG code: `shared/dags/file_to_destination.py` (mounted into every Airflow stage)
 
+## Connectivity test DAGs
+
+Mounted from `shared/dags/` (plain Python drivers, no Airflow hooks):
+
+| DAG id | Env vars |
+|--------|----------|
+| `test_postgres_connection` | `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` |
+| `test_oracle_connection` | `ORA_HOST`, `ORA_PORT`, `ORA_SID`, `ORA_USER`, `ORA_PASSWORD`, `ORA_SCHEMA` |
+| `test_teradata_connection` | `TERADATA_HOST`, `TERADATA_PORT`, `TERADATA_USER`, `TERADATA_PASSWORD`, `TERADATA_DATABASE` |
+
+Edit values in `.env`, recreate containers, then Trigger each DAG from the UI.
+
 ## Project layout
 
 ```

@@ -8,7 +8,10 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 USER airflow
-RUN pip install --no-cache-dir "psycopg2-binary==2.9.9"
+RUN pip install --no-cache-dir \
+      "psycopg2-binary==2.9.9" \
+      "oracledb==2.5.1" \
+      "teradatasql==20.0.0.15"
 
 LABEL org.apache.airflow.version="2.5.2" \
       base.os="debian" \
